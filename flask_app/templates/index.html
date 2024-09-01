@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDFBuddy</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+</head>
+<body>
+    <div id="chat-container">
+        <h1 id="app-title">
+            <img src="{{ url_for('static', filename='document_icon.jpeg') }}" alt="Document Icon">
+            PDFBuddy
+        </h1>
+        <div id="chat-log"></div>
+
+        <!-- Progress bar container -->
+        <div id="progress-bar-container" style="display: none;">
+            <div id="progress-bar"></div>
+        </div>
+
+        <!-- File upload container -->
+        <div id="file-upload-container">
+            <label class="custom-file-upload">
+                <input type="file" id="pdf-file" name="pdf-file" accept="application/pdf">
+                Choose File
+            </label>
+            <span id="file-name">No file chosen</span>
+            <button id="upload-button">Upload PDF</button>
+        </div>
+
+        <!-- Input container -->
+        <div id="input-container">
+            <input type="text" id="user-input" placeholder="Ask a question...">
+            <button id="send-button">Send</button>
+        </div>
+
+        <!-- Links container -->
+        <div class="links">
+            <p>Follow for more 👨🏻‍💻:</p>
+            <a href="https://www.linkedin.com/in/itsdivyanshjha/" class="btn"><i class="fab fa-linkedin"></i></a>
+            <a href="mailto:jhadivyansh29@gmail.com" class="btn"><i class="fas fa-envelope"></i></a>
+            <a href="https://github.com/itsdivyanshjha" class="btn"><i class="fab fa-github"></i></a>
+        </div>
+    </div>
+
+    <!-- Scroll to bottom button -->
+    <button id="scroll-to-bottom" style="display: none;">⬇↓</button>
+
+    <script>
+        let pdfText = '';
+
+        document.getElementById('pdf-file').addEventListener('change', function() {
+            const fileName = this.files[0]?.name || 'No file chosen';
+            document.getElementById('file-name').textContent = fileName;
+        });
+
+        document.getElementById('upload-button').addEventListener('click', async function() {
+            const fileInput = document.getElementById('pdf-file');
+            const formData = new FormData();
+            formData.append('pdf-file', fileInput.files[0]);
+
+            // Show progress bar
+            const progressBarContainer = document.getElementById('progress-bar-container');
+            const progressBar = document.getElementById('progress-bar');
+            progressBarContainer.style.display = 'block';
+            progressBar.style.width = '50%';  // Simulate loading
+
+            const response = await fetch('/upload', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+            pdfText = data.pdf_text;
+
+            // Hide progress bar after loading is complete
+            progressBar.style.width = '100%';
+            setTimeout(() => progressBarContainer.style.display = 'none', 500);
+
+            const chatLog = document.getElementById('chat-log');
+            chatLog.innerHTML += `<p><b>PDFBuddy:</b> PDF uploaded successfully.</p>`;
+            chatLog.scrollTop = chatLog.scrollHeight; // Auto-scroll to the bottom
+            document.getElementById('scroll-to-bottom').style.display = 'block'; // Show scroll to bottom button
+        });
+
+        document.getElementById('send-button').addEventListener('click', async function() {
+            const userInput = document.getElementById('user-input').value;
+
+            // Show progress bar
+            const progressBarContainer = document.getElementById('progress-bar-container');
+            const progressBar = document.getElementById('progress-bar');
+            progressBarContainer.style.display = 'block';
+            progressBar.style.width = '50%';  // Simulate loading
+
+            const questionResponse = await fetch('/ask', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ question: userInput, pdf_text: pdfText })
+            });
+
+            const questionData = await questionResponse.json();
+
+            // Hide progress bar after loading is complete
+            progressBar.style.width = '100%';
+            setTimeout(() => progressBarContainer.style.display = 'none', 500);
+
+            const chatLog = document.getElementById('chat-log');
+            chatLog.innerHTML += `<p><b>You:</b> ${userInput}</p>`;
+            chatLog.innerHTML += `<div class="response-block"><b>PDFBuddy:</b> ${questionData.answer}</div>`;
+
+            chatLog.scrollTop = chatLog.scrollHeight; // Auto-scroll to the bottom
+            document.getElementById('scroll-to-bottom').style.display = 'block'; // Show scroll to bottom button
+
+            document.getElementById('user-input').value = '';
+        });
+
+        // Scroll to bottom button functionality
+        document.getElementById('scroll-to-bottom').addEventListener('click', function() {
+            const chatLog = document.getElementById('chat-log');
+            chatLog.scrollTop = chatLog.scrollHeight;
+        });
+    </script>
+</body>
+</html>
